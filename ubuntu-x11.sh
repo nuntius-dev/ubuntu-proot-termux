@@ -28,7 +28,7 @@ pkg install -y dbus proot-distro pulseaudio virglrenderer-android x11vnc firefox
 
 # Verificar el fabricante del dispositivo
 manufacturer=$(getprop ro.product.manufacturer)
-if [ "$manufacturer" == "Samsung" ]; then
+if [ "$manufacturer" == "samsung" ]; then
   echo 'LD_PRELOAD=/system/lib64/libskcodec.so' >> ~/.bashrc
 fi
 
