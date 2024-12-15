@@ -78,8 +78,9 @@ source ~/.bashrc
 
 # Configuración para aplicaciones gráficas en Termux
 echo "allow-external-apps = true" >> ~/.termux/termux.properties
-killall termux-x11 2>/dev/null
-termux-x11 :1 >/dev/null &
+if pgrep termux-x11 > /dev/null; then
+    killall termux-x11
+fi
 am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1
 chmod +x ~/startubuntu.sh
 # Crear alias para iniciar entorno gráfico
