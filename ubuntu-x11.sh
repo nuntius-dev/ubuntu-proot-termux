@@ -81,9 +81,9 @@ echo "allow-external-apps = true" >> ~/.termux/termux.properties
 killall termux-x11 2>/dev/null
 termux-x11 :1 >/dev/null &
 am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1
-
+chmod +x ~/startubuntu.sh
 # Crear alias para iniciar entorno gráfico
-echo "alias startubuntu='GALLIUM_DRIVER=virpipe MESA_GL_VERSION_OVERRIDE=4.0 proot-distro login ubuntu --shared-tmp -- /bin/bash -c \"export PULSE_SERVER=127.0.0.1; export DISPLAY=:1; startxfce4\"'" >> ~/.bashrc
+echo "alias startubuntu='~/startubuntu.sh'" >> ~/.bashrc
 source ~/.bashrc
 
 echo "Instalación completa. Usa el comando 'startubuntu' para iniciar el entorno gráfico."
