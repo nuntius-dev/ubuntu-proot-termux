@@ -22,6 +22,9 @@ termux-setup-storage
 termux-change-repo
 
 # Instalar repositorio gráfico y paquetes iniciales
+pkg update
+pkg install x11-repo -y
+pkg install termux-x11-nightly -y
 pkg install -y x11-repo termux-x11-nightly
 pkg update -y
 pkg install -y dbus proot-distro pulseaudio virglrenderer-android x11vnc firefox pavucontrol-qt
