@@ -82,4 +82,4 @@ am start --user 0 -n com.termux.x11/com.termux.x11.MainActivity >/dev/null 2>&1
 echo "alias startubuntu='~/startubuntu.sh'" >> ~/.bashrc
 source ~/.bashrc
 
-echo "Instalación completa. Usa el comando 'startubuntu' para iniciar el entorno gráfico."
+echo "Instalación completa. Usa el comando './startubuntu.sh' para iniciar el entorno gráfico."
