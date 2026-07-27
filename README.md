@@ -1,4 +1,4 @@
-🐧 Ubuntu PRoot Termux (XFCE + Antigravity IDE + Chrome)
+ Ubuntu PRoot Termux (XFCE + Antigravity IDE + Chrome)
 
 Este repositorio contiene un script de instalación 100% automatizado (zero-touch) para desplegar un entorno de escritorio Ubuntu completo (XFCE) directamente en tu dispositivo Android usando Termux y PRoot.
 
