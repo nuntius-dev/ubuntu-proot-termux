@@ -31,7 +31,8 @@ check_prerequisites() {
 }
 
 install_ubuntu() {
-    if proot-distro list | grep -q ubuntu; then
+    # Verificamos si la carpeta física de Ubuntu existe
+    if [ -d "$PREFIX/var/lib/proot-distro/installed-rootfs/ubuntu" ]; then
         msg "El contenedor de Ubuntu ya existe."
     else
         msg "Instalando Ubuntu RootFS..."
