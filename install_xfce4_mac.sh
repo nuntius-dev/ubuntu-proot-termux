@@ -18,7 +18,7 @@ if ! proot-distro login ubuntu -- true >/dev/null 2>&1; then
     error "Ubuntu no está instalado. Ejecuta install-ubuntu-termux.sh primero."
 fi
 
-msg "=== Instalando Tema macOS y Plank Dock ==="
+msg "=== Instalando Tema SmallSur y Plank Dock ==="
 
 proot-distro login ubuntu -- bash -c "
     set -e
@@ -26,10 +26,10 @@ proot-distro login ubuntu -- bash -c "
 
     msg() { echo -e \"\033[0;32m[INFO]\033[0m \$1\"; }
 
-    msg \"Instalando dependencias de compilación y Plank...\"
+    msg \"Instalando dependencias base y Plank...\"
     apt update || true
-    # Volvemos a incluir sassc y dependencias necesarias para compilar el tema de forma segura
-    apt install -y git sassc libglib2.0-dev plank xz-utils sudo
+    # Limpiamos las dependencias: ya no necesitamos 'sassc' ni compiladores
+    apt install -y git plank sudo wget xz-utils
 
     msg \"Preparando instalación de temas...\"
     
@@ -37,21 +37,17 @@ proot-distro login ubuntu -- bash -c "
 #!/bin/bash
 mkdir -p ~/.themes ~/.icons ~/.config/autostart
 
-echo \"[INFO] Descargando y compilando WhiteSur GTK Theme...\"
-rm -rf ~/WhiteSur-gtk
-git clone --depth=1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git ~/WhiteSur-gtk
-cd ~/WhiteSur-gtk
-# Instalamos forzando el directorio local del usuario para evitar bloqueos
-./install.sh -d ~/.themes -N glassy -c Dark
+echo \"[INFO] Instalando SmallSur GTK Theme (Versión ultra-ligera)...\"
+rm -rf ~/.themes/SmallSur
+# Clonamos el repositorio directamente dentro de la carpeta de temas de XFCE
+git clone --depth=1 https://github.com/jothi-prasath/SmallSur.git ~/.themes/SmallSur
 
-echo \"[INFO] Descargando y compilando WhiteSur Icon Theme...\"
-rm -rf ~/WhiteSur-icon
-git clone --depth=1 https://github.com/vinceliuice/WhiteSur-icon-theme.git ~/WhiteSur-icon
-cd ~/WhiteSur-icon
+echo \"[INFO] Instalando WhiteSur Icon Theme...\"
+rm -rf /tmp/WhiteSur-icon
+git clone --depth=1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon
+cd /tmp/WhiteSur-icon
 ./install.sh -d ~/.icons
-
-echo \"[INFO] Limpiando archivos de instalación...\"
-rm -rf ~/WhiteSur-*
+rm -rf /tmp/WhiteSur-icon
 
 echo \"[INFO] Configurando Dock y automatización visual...\"
 cat <<EOF > ~/.config/autostart/plank.desktop
@@ -62,11 +58,11 @@ Hidden=false
 Name=Plank Dock
 EOF
 
-# El script Kamikaze ahora incluye el comando para ELIMINAR el panel 2 de XFCE
+# El script Kamikaze elimina el panel 2 (inferior) de XFCE y aplica SmallSur
 cat <<EOF > ~/.config/autostart/apply-mac-theme.desktop
 [Desktop Entry]
 Type=Application
-Exec=bash -c \"sleep 4; xfconf-query -c xfce4-panel -p /panels -t int -s 1 -a; xfconf-query -c xsettings -p /Net/ThemeName -s 'WhiteSur-Dark' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'WhiteSur-Dark' --create -t string; rm ~/.config/autostart/apply-mac-theme.desktop\"
+Exec=bash -c \"sleep 4; xfconf-query -c xfce4-panel -p /panels -t int -s 1 -a; xfconf-query -c xsettings -p /Net/ThemeName -s 'SmallSur' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'SmallSur' --create -t string; rm ~/.config/autostart/apply-mac-theme.desktop\"
 Hidden=false
 Name=Apply Mac Theme
 EOF
@@ -75,7 +71,7 @@ EOF_USER
     chmod +x /tmp/install_themes_as_user.sh
     chown $USERNAME:$USERNAME /tmp/install_themes_as_user.sh
     
-    msg \"Compilando temas (esto tomará de 1 a 2 minutos)...\"
+    msg \"Aplicando configuración (esto será muy rápido)...\"
     su - $USERNAME -c \"/tmp/install_themes_as_user.sh\"
     
     rm /tmp/install_themes_as_user.sh
