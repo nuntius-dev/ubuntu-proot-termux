@@ -14,7 +14,7 @@ USERNAME="ubuntu"
 msg() { echo -e "${GREEN}[INFO]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# Verificar si Ubuntu está instalado intentando ejecutar un comando básico dentro del contenedor
+# Verificar si Ubuntu está instalado intentando ejecutar un comando básico
 if ! proot-distro login ubuntu -- true >/dev/null 2>&1; then
     error "Ubuntu no está instalado. Ejecuta install-ubuntu-termux.sh primero."
 fi
@@ -28,7 +28,10 @@ proot-distro login ubuntu -- bash -c "
     msg() { echo -e \"\033[0;32m[INFO]\033[0m \$1\"; }
 
     msg \"Instalando dependencias de compilación y Plank...\"
-    apt update
+    
+    # Añadimos '|| true' para que no colapse si el repositorio de Antigravity da error 404
+    apt update || true
+    
     apt install -y git sassc libglib2.0-dev plank
 
     msg \"Descargando e instalando WhiteSur GTK Theme...\"
