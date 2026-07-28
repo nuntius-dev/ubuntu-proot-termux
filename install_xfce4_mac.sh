@@ -14,7 +14,6 @@ USERNAME="ubuntu"
 msg() { echo -e "${GREEN}[INFO]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# Verificar si Ubuntu está instalado intentando ejecutar un comando básico
 if ! proot-distro login ubuntu -- true >/dev/null 2>&1; then
     error "Ubuntu no está instalado. Ejecuta install-ubuntu-termux.sh primero."
 fi
@@ -28,21 +27,21 @@ proot-distro login ubuntu -- bash -c "
     msg() { echo -e \"\033[0;32m[INFO]\033[0m \$1\"; }
 
     msg \"Instalando dependencias de compilación y Plank...\"
-    
-    # Añadimos '|| true' para que no colapse si el repositorio de Antigravity da error 404
     apt update || true
-    
-    apt install -y git sassc libglib2.0-dev plank
+    apt install -y git sassc libglib2.0-dev plank xz-utils
 
     msg \"Descargando e instalando WhiteSur GTK Theme...\"
     rm -rf /tmp/WhiteSur-gtk
-    git clone https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/WhiteSur-gtk
-    /tmp/WhiteSur-gtk/install.sh -t all -N glassy -s 220
+    git clone --depth=1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/WhiteSur-gtk
+    # Instalamos manualmente en la carpeta global para evitar problemas de permisos
+    mkdir -p /usr/share/themes
+    cd /tmp/WhiteSur-gtk && ./install.sh -t all -N glassy -s 220 -d /usr/share/themes
 
     msg \"Descargando e instalando WhiteSur Icon Theme...\"
     rm -rf /tmp/WhiteSur-icon
-    git clone https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon
-    /tmp/WhiteSur-icon/install.sh
+    git clone --depth=1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon
+    mkdir -p /usr/share/icons
+    cd /tmp/WhiteSur-icon && ./install.sh -d /usr/share/icons
 
     msg \"Limpiando archivos temporales...\"
     rm -rf /tmp/WhiteSur-*
@@ -59,11 +58,11 @@ Hidden=false
 Name=Plank Dock
 EOF
 
-    # 2. Script Kamikaze para aplicar el tema en el próximo inicio de sesión gráfico
+    # 2. Script Kamikaze para aplicar el tema
     cat <<EOF > /home/$USERNAME/.config/autostart/apply-mac-theme.desktop
 [Desktop Entry]
 Type=Application
-Exec=bash -c \"xfconf-query -c xsettings -p /Net/ThemeName -s 'WhiteSur-Dark' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'WhiteSur-Dark' --create -t string; rm /home/$USERNAME/.config/autostart/apply-mac-theme.desktop\"
+Exec=bash -c \"sleep 3; xfconf-query -c xsettings -p /Net/ThemeName -s 'WhiteSur-Dark' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'WhiteSur-Dark' --create -t string; rm /home/$USERNAME/.config/autostart/apply-mac-theme.desktop\"
 Hidden=false
 Name=Apply Mac Theme
 EOF
