@@ -28,29 +28,33 @@ proot-distro login ubuntu -- bash -c "
 
     msg \"Instalando dependencias de compilación y Plank...\"
     apt update || true
-    apt install -y git sassc libglib2.0-dev plank xz-utils
+    apt install -y git sassc libglib2.0-dev plank xz-utils sudo
 
-    msg \"Descargando e instalando WhiteSur GTK Theme...\"
-    rm -rf /tmp/WhiteSur-gtk
-    git clone --depth=1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git /tmp/WhiteSur-gtk
-    # Instalamos manualmente en la carpeta global para evitar problemas de permisos
-    mkdir -p /usr/share/themes
-    cd /tmp/WhiteSur-gtk && ./install.sh -t all -N glassy -s 220 -d /usr/share/themes
-
-    msg \"Descargando e instalando WhiteSur Icon Theme...\"
-    rm -rf /tmp/WhiteSur-icon
-    git clone --depth=1 https://github.com/vinceliuice/WhiteSur-icon-theme.git /tmp/WhiteSur-icon
-    mkdir -p /usr/share/icons
-    cd /tmp/WhiteSur-icon && ./install.sh -d /usr/share/icons
-
-    msg \"Limpiando archivos temporales...\"
-    rm -rf /tmp/WhiteSur-*
-
-    msg \"Configurando automatización del entorno visual...\"
-    mkdir -p /home/$USERNAME/.config/autostart
+    msg \"Preparando instalación de temas...\"
     
-    # 1. Auto-arranque del Dock
-    cat <<EOF > /home/$USERNAME/.config/autostart/plank.desktop
+    # Creamos un script temporal para ejecutarlo disfrazados del usuario normal
+    # Esto evita el bloqueo de seguridad del tema por intentar instalar como 'root'
+    cat << 'EOF_USER' > /tmp/install_themes_as_user.sh
+#!/bin/bash
+mkdir -p ~/.themes ~/.icons ~/.config/autostart
+
+echo "[INFO] Descargando y compilando WhiteSur GTK Theme..."
+rm -rf ~/WhiteSur-gtk
+git clone --depth=1 https://github.com/vinceliuice/WhiteSur-gtk-theme.git ~/WhiteSur-gtk
+cd ~/WhiteSur-gtk
+./install.sh -c Dark
+
+echo "[INFO] Descargando y compilando WhiteSur Icon Theme..."
+rm -rf ~/WhiteSur-icon
+git clone --depth=1 https://github.com/vinceliuice/WhiteSur-icon-theme.git ~/WhiteSur-icon
+cd ~/WhiteSur-icon
+./install.sh
+
+echo "[INFO] Limpiando archivos de instalación..."
+rm -rf ~/WhiteSur-*
+
+echo "[INFO] Configurando Dock y automatización visual..."
+cat <<EOF > ~/.config/autostart/plank.desktop
 [Desktop Entry]
 Type=Application
 Exec=plank
@@ -58,16 +62,24 @@ Hidden=false
 Name=Plank Dock
 EOF
 
-    # 2. Script Kamikaze para aplicar el tema
-    cat <<EOF > /home/$USERNAME/.config/autostart/apply-mac-theme.desktop
+cat <<EOF > ~/.config/autostart/apply-mac-theme.desktop
 [Desktop Entry]
 Type=Application
-Exec=bash -c \"sleep 3; xfconf-query -c xsettings -p /Net/ThemeName -s 'WhiteSur-Dark' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'WhiteSur-Dark' --create -t string; rm /home/$USERNAME/.config/autostart/apply-mac-theme.desktop\"
+Exec=bash -c \"sleep 4; xfconf-query -c xsettings -p /Net/ThemeName -s 'WhiteSur-Dark' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'WhiteSur-Dark' --create -t string; rm ~/.config/autostart/apply-mac-theme.desktop\"
 Hidden=false
 Name=Apply Mac Theme
 EOF
+EOF_USER
 
-    chown -R $USERNAME:$USERNAME /home/$USERNAME/.config
+    # Damos permisos y ejecutamos el script disfrazados de 'ubuntu'
+    chmod +x /tmp/install_themes_as_user.sh
+    chown $USERNAME:$USERNAME /tmp/install_themes_as_user.sh
+    
+    msg \"Ejecutando instalación segura (esto tomará uno o dos minutos)...\"
+    su - $USERNAME -c \"/tmp/install_themes_as_user.sh\"
+    
+    rm /tmp/install_themes_as_user.sh
+
     msg \"¡Personalización completada con éxito!\"
 "
 
