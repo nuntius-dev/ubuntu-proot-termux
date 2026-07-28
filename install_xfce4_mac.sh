@@ -14,8 +14,8 @@ USERNAME="ubuntu"
 msg() { echo -e "${GREEN}[INFO]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-# Verificar si Ubuntu está instalado
-if ! proot-distro list | grep -q ubuntu; then
+# Verificar si la carpeta física de Ubuntu existe
+if [ ! -d "$PREFIX/var/lib/proot-distro/installed-rootfs/ubuntu" ]; then
     error "Ubuntu no está instalado. Ejecuta install-ubuntu-termux.sh primero."
 fi
 
