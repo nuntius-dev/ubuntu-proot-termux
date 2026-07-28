@@ -18,7 +18,7 @@ if ! proot-distro login ubuntu -- true >/dev/null 2>&1; then
     error "Ubuntu no está instalado. Ejecuta install-ubuntu-termux.sh primero."
 fi
 
-msg "=== Instalando Tema SmallSur y Plank Dock ==="
+msg "=== Instalando Tema SmallSur, Dock y Fondos ==="
 
 proot-distro login ubuntu -- bash -c "
     set -e
@@ -28,18 +28,19 @@ proot-distro login ubuntu -- bash -c "
 
     msg \"Instalando dependencias base y Plank...\"
     apt update || true
-    # Limpiamos las dependencias: ya no necesitamos 'sassc' ni compiladores
     apt install -y git plank sudo wget xz-utils
 
-    msg \"Preparando instalación de temas...\"
+    msg \"Preparando instalación de temas y fondos...\"
     
     cat << 'EOF_USER' > /tmp/install_themes_as_user.sh
 #!/bin/bash
-mkdir -p ~/.themes ~/.icons ~/.config/autostart
+mkdir -p ~/.themes ~/.icons ~/.config/autostart ~/Pictures
 
-echo \"[INFO] Instalando SmallSur GTK Theme (Versión ultra-ligera)...\"
+echo \"[INFO] Descargando fondo de pantalla de macOS...\"
+wget -qO ~/Pictures/mac-wallpaper.jpg \"https://raw.githubusercontent.com/vinceliuice/WhiteSur-wallpapers/master/1080p/BigSur-1.jpg\"
+
+echo \"[INFO] Instalando SmallSur GTK Theme...\"
 rm -rf ~/.themes/SmallSur
-# Clonamos el repositorio directamente dentro de la carpeta de temas de XFCE
 git clone --depth=1 https://github.com/jothi-prasath/SmallSur.git ~/.themes/SmallSur
 
 echo \"[INFO] Instalando WhiteSur Icon Theme...\"
@@ -58,11 +59,11 @@ Hidden=false
 Name=Plank Dock
 EOF
 
-# El script Kamikaze elimina el panel 2 (inferior) de XFCE y aplica SmallSur
+# El script Kamikaze ahora enciende transparencias, elimina el panel inferior, aplica el tema y el fondo de pantalla
 cat <<EOF > ~/.config/autostart/apply-mac-theme.desktop
 [Desktop Entry]
 Type=Application
-Exec=bash -c \"sleep 4; xfconf-query -c xfce4-panel -p /panels -t int -s 1 -a; xfconf-query -c xsettings -p /Net/ThemeName -s 'SmallSur' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'SmallSur' --create -t string; rm ~/.config/autostart/apply-mac-theme.desktop\"
+Exec=bash -c \"sleep 4; xfconf-query -c xfwm4 -p /general/use_compositing -s true --create -t bool; xfconf-query -c xfce4-panel -p /panels -t int -s 1 -a; xfconf-query -c xsettings -p /Net/ThemeName -s 'SmallSur' --create -t string; xfconf-query -c xsettings -p /Net/IconThemeName -s 'WhiteSur-dark' --create -t string; xfconf-query -c xfwm4 -p /general/theme -s 'SmallSur' --create -t string; xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/last-image -s ~/Pictures/mac-wallpaper.jpg --create -t string; xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVirtual1/workspace0/last-image -s ~/Pictures/mac-wallpaper.jpg --create -t string; rm ~/.config/autostart/apply-mac-theme.desktop\"
 Hidden=false
 Name=Apply Mac Theme
 EOF
@@ -71,7 +72,7 @@ EOF_USER
     chmod +x /tmp/install_themes_as_user.sh
     chown $USERNAME:$USERNAME /tmp/install_themes_as_user.sh
     
-    msg \"Aplicando configuración (esto será muy rápido)...\"
+    msg \"Aplicando configuración visual...\"
     su - $USERNAME -c \"/tmp/install_themes_as_user.sh\"
     
     rm /tmp/install_themes_as_user.sh
