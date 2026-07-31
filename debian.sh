@@ -1,13 +1,13 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v13.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v14.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Live Logs
 #######################################################
 
 # ============== CONFIGURACIÓN ==============
-SCRIPT_VERSION="v13.0"
+SCRIPT_VERSION="v14.0"
 TOTAL_STEPS=12
 CURRENT_STEP=0
 USERNAME="devroom"
@@ -144,7 +144,10 @@ step_base() {
     ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
 
     (pkg update -y > "$LOG_DIR/n_base.log" 2>&1 || true) & spinner $! "Actualizando listas..." "$LOG_DIR/n_base.log"
-    (DEBIAN_FRONTEND=noninteractive pkg upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" >> "$LOG_DIR/n_base.log" 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..." "$LOG_DIR/n_base.log"
+    
+    # NUEVA LÍNEA TURBO APLICADA AQUÍ:
+    (DEBIAN_FRONTEND=noninteractive pkg upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-unsafe-io" > /dev/null 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..." ""
+    
     (pkg install -y x11-repo tur-repo >> "$LOG_DIR/n_base.log" 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..." "$LOG_DIR/n_base.log"
     (pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget >> "$LOG_DIR/n_base.log" 2>&1 || true) & spinner $! "Instalando dependencias core..." "$LOG_DIR/n_base.log"
 }
@@ -237,7 +240,6 @@ step_ide() {
 step_chrome() {
     update_progress
     echo -e "${CYAN}[+] Instalando Google Chrome...${NC}"
-    # Nota: Dentro de Debian (sh -c), /tmp sí es válido y funcional.
     (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && apt install -y /tmp/chrome.deb && rm -f /tmp/chrome.deb" > "$LOG_DIR/n_chrome.log" 2>&1 || true) & spinner $! "Descargando e instalando Chrome..." "$LOG_DIR/n_chrome.log"
 
     (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real 2>/dev/null; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable 2>/dev/null; chmod +x /usr/bin/google-chrome-stable 2>/dev/null; fi || true" > /dev/null 2>&1) & spinner $! "Aplicando optimización sandbox..." ""
