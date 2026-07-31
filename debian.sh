@@ -1,13 +1,13 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v15.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v16.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Live Logs
 #######################################################
 
 # ============== CONFIGURACIÓN ==============
-SCRIPT_VERSION="v15.0"
+SCRIPT_VERSION="v16.0"
 TOTAL_STEPS=12
 CURRENT_STEP=0
 USERNAME="devroom"
@@ -28,7 +28,7 @@ WHITE='\033[1;37m'
 GRAY='\033[0;90m'
 NC='\033[0m'
 
-# ============== FUNCIONES DE UI ==============
+# ============== FUNCIONES DE UI & UTILIDADES ==============
 update_progress() {
     CURRENT_STEP=$((CURRENT_STEP + 1))
     PERCENT=$((CURRENT_STEP * 100 / TOTAL_STEPS))
@@ -92,6 +92,10 @@ spinner() {
     fi
 }
 
+run_debian_user() {
+    proot-distro login debian -- su - "$USERNAME"
+}
+
 show_banner() {
     clear
     echo -e "${CYAN}╔════════════════════════════════════════════════════╗${NC}"
@@ -147,7 +151,6 @@ step_base() {
     echo "tzdata tzdata/Zones/America select Santiago" | debconf-set-selections 2>/dev/null || true
     ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
 
-    # SE ACABARON LAS MENTIRAS: Quitamos los '|| true' para ver dónde falla realmente
     (pkg update -y > "$LOG_DIR/n_base.log" 2>&1) & spinner $! "Actualizando listas..." "$LOG_DIR/n_base.log"
     (DEBIAN_FRONTEND=noninteractive pkg upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-unsafe-io" >> "$LOG_DIR/n_base.log" 2>&1) & spinner $! "Actualizando paquetes del sistema..." "$LOG_DIR/n_base.log"
     (pkg install -y x11-repo tur-repo >> "$LOG_DIR/n_base.log" 2>&1) & spinner $! "Añadiendo repositorios avanzados..." "$LOG_DIR/n_base.log"
@@ -211,9 +214,9 @@ step_debian_packages() {
 step_mac_theme() {
     update_progress
     echo -e "${CYAN}[+] Aplicando Nuntius UI (macOS Estética)...${NC}"
-    mkdir -p "$DEBIAN_ROOT/tmp"
-    cat << 'EOF_THEME' > "$DEBIAN_ROOT/tmp/theme.sh"
-#!/bin/bash
+    
+    # EJECUCIÓN DIRECTA POR HEREDOC (Sin archivos temporales en /tmp)
+    (run_debian_user << 'EOF_THEME' > "$LOG_DIR/n_theme.log" 2>&1
 mkdir -p ~/.themes ~/.icons ~/.config/autostart ~/Pictures
 wget -qO ~/Pictures/mac-wallpaper.jpg "https://raw.githubusercontent.com/vinceliuice/WhiteSur-wallpapers/master/1080p/BigSur-1.jpg"
 rm -rf ~/.themes/SmallSur && git clone --depth=1 https://github.com/jothi-prasath/SmallSur.git ~/.themes/SmallSur > /dev/null 2>&1
@@ -227,8 +230,7 @@ Hidden=false
 Name=Nuntius UI Init
 EOF
 EOF_THEME
-    chmod +x "$DEBIAN_ROOT/tmp/theme.sh"
-    (proot-distro login debian -- su - $USERNAME -c "/tmp/theme.sh" > "$LOG_DIR/n_theme.log" 2>&1) & spinner $! "Compilando tema visual..." "$LOG_DIR/n_theme.log"
+) & spinner $! "Compilando tema visual..." "$LOG_DIR/n_theme.log"
 }
 
 step_ide() {
@@ -250,9 +252,9 @@ step_chrome() {
 step_shortcuts() {
     update_progress
     echo -e "${CYAN}[+] Creando accesos directos en el escritorio...${NC}"
-    mkdir -p "$DEBIAN_ROOT/tmp"
-    cat << 'EOF_SHORT' > "$DEBIAN_ROOT/tmp/shortcuts.sh"
-#!/bin/bash
+    
+    # EJECUCIÓN DIRECTA POR HEREDOC (Sin archivos temporales de enlaces)
+    (run_debian_user << 'EOF_SHORT' > "$LOG_DIR/n_shortcuts.log" 2>&1
 mkdir -p ~/Desktop
 cat <<EOF > ~/Desktop/antigravity.desktop
 [Desktop Entry]
@@ -277,8 +279,7 @@ Categories=Network;WebBrowser;
 EOF
 chmod +x ~/Desktop/*.desktop
 EOF_SHORT
-    chmod +x "$DEBIAN_ROOT/tmp/shortcuts.sh"
-    (proot-distro login debian -- su - $USERNAME -c "/tmp/shortcuts.sh" > /dev/null 2>&1) & spinner $! "Generando iconos de acceso..." ""
+) & spinner $! "Generando iconos de acceso..." "$LOG_DIR/n_shortcuts.log"
 }
 
 step_audio() {
