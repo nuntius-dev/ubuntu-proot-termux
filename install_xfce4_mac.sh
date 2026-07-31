@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v4.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v5.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Wine,
@@ -71,7 +71,7 @@ show_banner() {
     cat << 'BANNER'
     ╔══════════════════════════════════════════════╗
     ║                                              ║
-    ║   🚀  NUNTIUS DEV ENVIRONMENT v4.0  🚀       ║
+    ║   🚀  NUNTIUS DEV ENVIRONMENT v5.0  🚀       ║
     ║                                              ║
     ║            https://nuntius.dev               ║
     ║                                              ║
@@ -84,7 +84,7 @@ detect_device() {
     echo -e "${CYAN}[*] Detectando hardware de tu dispositivo...${NC}"
     GPU_VENDOR=$(getprop ro.hardware.egl 2>/dev/null || echo "")
     DEVICE_BRAND=$(getprop ro.product.brand 2>/dev/null || echo "Unknown")
-    
+
     if [[ "$GPU_VENDOR" == *"adreno"* ]] || [[ "$DEVICE_BRAND" =~ (samsung|Samsung|oneplus|xiaomi) ]]; then
         GPU_DRIVER="freedreno"
         echo -e "  ${GREEN}🎮${NC} GPU Detectada: ${WHITE}Adreno (Qualcomm) - Turnip driver${NC}"
@@ -100,9 +100,16 @@ detect_device() {
 step_base() {
     update_progress
     echo -e "${CYAN}[+] Preparando entorno base de Termux...${NC}"
-    # SOLUCIÓN 4.0: Usar 'yes' para responder a todas las preguntas ocultas de Termux
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Preconfigurar timezone para que tzdata no pregunte nada en el entorno Termux
+    echo "tzdata tzdata/Areas select America" | debconf-set-selections 2>/dev/null || true
+    echo "tzdata tzdata/Zones/America select Santiago" | debconf-set-selections 2>/dev/null || true
+    ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
+
     (yes | pkg update -y > /dev/null 2>&1 || true) & spinner $! "Actualizando listas..."
-    (yes "" | pkg upgrade -y -o Dpkg::Options::="--force-confnew" > /dev/null 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..."
+    (DEBIAN_FRONTEND=noninteractive yes "" | pkg upgrade -y -o Dpkg::Options::="--force-confnew" > /dev/null 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..."
     (yes | pkg install -y x11-repo tur-repo > /dev/null 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..."
     (yes | pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget > /dev/null 2>&1 || true) & spinner $! "Instalando dependencias core..."
 }
@@ -111,7 +118,7 @@ step_gpu() {
     update_progress
     echo -e "${CYAN}[+] Configurando Aceleración de Hardware (GPU)...${NC}"
     (yes | pkg install -y mesa-zink vulkan-loader-android > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan..."
-    
+
     if [ "$GPU_DRIVER" == "freedreno" ]; then
         (yes | pkg install -y mesa-vulkan-icd-freedreno > /dev/null 2>&1 || true) & spinner $! "Instalando drivers Turnip..."
     else
@@ -153,7 +160,9 @@ step_debian() {
 step_debian_packages() {
     update_progress
     echo -e "${CYAN}[+] Configurando entorno gráfico y paquetes base...${NC}"
-    (proot-distro login debian -- sh -c "apt update -y && DEBIAN_FRONTEND=noninteractive apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils > /dev/null 2>&1 || true") & spinner $! "Instalando XFCE4 y utilidades..."
+    
+    # Inyección de variables directas para blindar apt dentro de Debian
+    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils > /dev/null 2>&1 || true") & spinner $! "Instalando XFCE4 y utilidades..."
     (proot-distro login debian -- sh -c "id -u $USERNAME &>/dev/null || useradd -m $USERNAME && passwd -d $USERNAME && echo '$USERNAME ALL=(ALL) ALL' > /etc/sudoers.d/$USERNAME && chmod 440 /etc/sudoers.d/$USERNAME || true") & spinner $! "Creando usuario desarrollador..."
 }
 
@@ -190,8 +199,8 @@ step_ide() {
 step_chrome() {
     update_progress
     echo -e "${CYAN}[+] Instalando Google Chrome...${NC}"
-    (proot-distro login debian -- sh -c "wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && DEBIAN_FRONTEND=noninteractive apt install -y /tmp/chrome.deb > /dev/null 2>&1 && rm -f /tmp/chrome.deb || true") & spinner $! "Descargando e instalando Chrome..."
-    
+    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && apt install -y /tmp/chrome.deb > /dev/null 2>&1 && rm -f /tmp/chrome.deb || true") & spinner $! "Descargando e instalando Chrome..."
+
     (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real 2>/dev/null; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable 2>/dev/null; chmod +x /usr/bin/google-chrome-stable 2>/dev/null; fi || true") & spinner $! "Aplicando optimización sandbox..."
 }
 
@@ -240,7 +249,7 @@ step_audio() {
 step_launchers() {
     update_progress
     echo -e "${CYAN}[+] Creando script de inicio Nuntius...${NC}"
-    
+
     cat > ~/start-nuntius.sh << 'EOF_LAUNCH'
 #!/data/data/com.termux/files/usr/bin/bash
 echo "🚀 Iniciando Nuntius Dev Environment..."
