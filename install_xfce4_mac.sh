@@ -1,12 +1,13 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v11.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v12.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Live Logs
 #######################################################
 
 # ============== CONFIGURACIÓN ==============
+SCRIPT_VERSION="v12.0"
 TOTAL_STEPS=12
 CURRENT_STEP=0
 USERNAME="devroom"
@@ -90,10 +91,15 @@ spinner() {
 
 show_banner() {
     clear
-    echo -e "${CYAN}========================================${NC}"
-    echo -e "  🚀 ${WHITE}NUNTIUS DEV ENVIRONMENT v11.0${NC} 🚀"
-    echo -e "         https://nuntius.dev"
-    echo -e "${CYAN}========================================${NC}"
+    echo -e "${CYAN}╔════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║${NC}                                                    ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}   🚀  ${WHITE}NUNTIUS DEV ENVIRONMENT ${SCRIPT_VERSION}${NC}  🚀       ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}              https://nuntius.dev                   ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC}                                                    ${CYAN}║${NC}"
+    echo -e "${CYAN}╠════════════════════════════════════════════════════╣${NC}"
+    echo -e "${CYAN}║${NC} ${GRAY}Ejecución:${NC} $(date +"%Y-%m-%d %H:%M:%S")                  ${CYAN}║${NC}"
+    echo -e "${CYAN}║${NC} ${GRAY}Comando:${NC} curl -sL install-ubuntu-termux.sh | bash  ${CYAN}║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════╝${NC}"
     echo ""
 }
 
@@ -134,13 +140,9 @@ step_base() {
     echo "tzdata tzdata/Zones/America select Santiago" | debconf-set-selections 2>/dev/null || true
     ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
 
-    # SOLUCIÓN V11: Ejecución pura y directa
     (pkg update -y > /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando listas..." "/tmp/n_base.log"
-    
     (DEBIAN_FRONTEND=noninteractive pkg upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" >> /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..." "/tmp/n_base.log"
-    
     (pkg install -y x11-repo tur-repo >> /tmp/n_base.log 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..." "/tmp/n_base.log"
-    
     (pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget >> /tmp/n_base.log 2>&1 || true) & spinner $! "Instalando dependencias core..." "/tmp/n_base.log"
 }
 
