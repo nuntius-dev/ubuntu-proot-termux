@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v7.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v8.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Wine,
@@ -71,7 +71,7 @@ show_banner() {
     cat << 'BANNER'
     ╔══════════════════════════════════════════════╗
     ║                                              ║
-    ║   🚀  NUNTIUS DEV ENVIRONMENT v7.0  🚀       ║
+    ║   🚀  NUNTIUS DEV ENVIRONMENT v8.0  🚀       ║
     ║                                              ║
     ║            https://nuntius.dev               ║
     ║                                              ║
@@ -116,11 +116,13 @@ step_base() {
 step_gpu() {
     update_progress
     echo -e "${CYAN}[+] Configurando Aceleración de Hardware (GPU)...${NC}"
-    # SOLUCIÓN V7: Usar vulkan-loader-generic para evitar el conflicto con termux-x11
-    (yes | pkg install -y mesa-zink vulkan-loader-generic > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan..."
+    
+    # SOLUCIÓN V8: Purgar el loader genérico e instalar el nativo de Android
+    (yes | pkg uninstall -y vulkan-loader-generic > /dev/null 2>&1 || true) & spinner $! "Resolviendo conflictos de dependencias Vulkan..."
+    (yes | pkg install -y mesa-zink vulkan-loader-android > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan nativo..."
 
     if [ "$GPU_DRIVER" == "freedreno" ]; then
-        (yes | pkg install -y mesa-vulkan-icd-freedreno > /dev/null 2>&1 || true) & spinner $! "Instalando drivers Turnip..."
+        (yes | pkg install -y mesa-vulkan-icd-freedreno > /dev/null 2>&1 || true) & spinner $! "Instalando drivers Turnip (Adreno)..."
     else
         (yes | pkg install -y mesa-vulkan-icd-swrast > /dev/null 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..."
     fi
