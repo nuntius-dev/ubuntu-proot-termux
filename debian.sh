@@ -1,18 +1,18 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v14.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v15.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Live Logs
 #######################################################
 
 # ============== CONFIGURACIÓN ==============
-SCRIPT_VERSION="v14.0"
+SCRIPT_VERSION="v15.0"
 TOTAL_STEPS=12
 CURRENT_STEP=0
 USERNAME="devroom"
-DEBIAN_ROOT="$PREFIX/var/lib/proot-distro/installed-rootfs/debian"
-LOG_DIR="$PREFIX/tmp"
+DEBIAN_ROOT="${PREFIX:-/data/data/com.termux/files/usr}/var/lib/proot-distro/installed-rootfs/debian"
+LOG_DIR="${PREFIX:-/data/data/com.termux/files/usr}/tmp"
 mkdir -p "$LOG_DIR"
 
 IDE_VERSION="1.23.2"
@@ -114,6 +114,10 @@ check_permissions() {
         echo -e "Por favor, ${WHITE}ACEPTA${NC} la ventana emergente en tu teléfono...\n"
         termux-setup-storage
         sleep 5
+        if [ ! -d "$HOME/storage" ]; then
+            echo -e "${RED}[!] Error: No concediste los permisos de almacenamiento. Abortando.${NC}"
+            exit 1
+        fi
     fi
 }
 
@@ -143,13 +147,11 @@ step_base() {
     echo "tzdata tzdata/Zones/America select Santiago" | debconf-set-selections 2>/dev/null || true
     ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
 
-    (pkg update -y > "$LOG_DIR/n_base.log" 2>&1 || true) & spinner $! "Actualizando listas..." "$LOG_DIR/n_base.log"
-    
-    # NUEVA LÍNEA TURBO APLICADA AQUÍ:
-    (DEBIAN_FRONTEND=noninteractive pkg upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-unsafe-io" > /dev/null 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..." ""
-    
-    (pkg install -y x11-repo tur-repo >> "$LOG_DIR/n_base.log" 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..." "$LOG_DIR/n_base.log"
-    (pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget >> "$LOG_DIR/n_base.log" 2>&1 || true) & spinner $! "Instalando dependencias core..." "$LOG_DIR/n_base.log"
+    # SE ACABARON LAS MENTIRAS: Quitamos los '|| true' para ver dónde falla realmente
+    (pkg update -y > "$LOG_DIR/n_base.log" 2>&1) & spinner $! "Actualizando listas..." "$LOG_DIR/n_base.log"
+    (DEBIAN_FRONTEND=noninteractive pkg upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-unsafe-io" >> "$LOG_DIR/n_base.log" 2>&1) & spinner $! "Actualizando paquetes del sistema..." "$LOG_DIR/n_base.log"
+    (pkg install -y x11-repo tur-repo >> "$LOG_DIR/n_base.log" 2>&1) & spinner $! "Añadiendo repositorios avanzados..." "$LOG_DIR/n_base.log"
+    (pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget >> "$LOG_DIR/n_base.log" 2>&1) & spinner $! "Instalando dependencias core..." "$LOG_DIR/n_base.log"
 }
 
 step_gpu() {
@@ -157,12 +159,12 @@ step_gpu() {
     echo -e "${CYAN}[+] Configurando Aceleración de Hardware (GPU)...${NC}"
     
     (pkg uninstall -y vulkan-loader-generic > "$LOG_DIR/n_gpu.log" 2>&1 || true) & spinner $! "Resolviendo conflictos Vulkan..." "$LOG_DIR/n_gpu.log"
-    (pkg install -y mesa-zink vulkan-loader-android >> "$LOG_DIR/n_gpu.log" 2>&1 || true) & spinner $! "Instalando backend de Vulkan nativo..." "$LOG_DIR/n_gpu.log"
+    (pkg install -y mesa-zink vulkan-loader-android >> "$LOG_DIR/n_gpu.log" 2>&1) & spinner $! "Instalando backend de Vulkan nativo..." "$LOG_DIR/n_gpu.log"
 
     if [ "$GPU_DRIVER" == "freedreno" ]; then
-        (pkg install -y mesa-vulkan-icd-freedreno >> "$LOG_DIR/n_gpu.log" 2>&1 || true) & spinner $! "Instalando drivers Turnip (Adreno)..." "$LOG_DIR/n_gpu.log"
+        (pkg install -y mesa-vulkan-icd-freedreno >> "$LOG_DIR/n_gpu.log" 2>&1) & spinner $! "Instalando drivers Turnip (Adreno)..." "$LOG_DIR/n_gpu.log"
     else
-        (pkg install -y mesa-vulkan-icd-swrast >> "$LOG_DIR/n_gpu.log" 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..." "$LOG_DIR/n_gpu.log"
+        (pkg install -y mesa-vulkan-icd-swrast >> "$LOG_DIR/n_gpu.log" 2>&1) & spinner $! "Instalando drivers de compatibilidad..." "$LOG_DIR/n_gpu.log"
     fi
 
     mkdir -p ~/.config
@@ -182,7 +184,7 @@ step_wine() {
     update_progress
     echo -e "${CYAN}[+] Instalando capa de compatibilidad Windows (Wine)...${NC}"
     (pkg remove wine-stable -y > "$LOG_DIR/n_wine.log" 2>&1 || true)
-    (pkg install -y hangover-wine hangover-wowbox64 >> "$LOG_DIR/n_wine.log" 2>&1 || true) & spinner $! "Instalando Hangover-Wine y Box64..." "$LOG_DIR/n_wine.log"
+    (pkg install -y hangover-wine hangover-wowbox64 >> "$LOG_DIR/n_wine.log" 2>&1) & spinner $! "Instalando Hangover-Wine y Box64..." "$LOG_DIR/n_wine.log"
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/wine /data/data/com.termux/files/usr/bin/wine 2>/dev/null || true
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/winecfg /data/data/com.termux/files/usr/bin/winecfg 2>/dev/null || true
 }
@@ -191,7 +193,7 @@ step_debian() {
     update_progress
     echo -e "${CYAN}[+] Instalando Subsistema Debian...${NC}"
     if [ ! -d "$DEBIAN_ROOT" ]; then
-        (proot-distro install debian > "$LOG_DIR/n_deb.log" 2>&1 || true) & spinner $! "Descargando imagen Debian..." "$LOG_DIR/n_deb.log"
+        (proot-distro install debian > "$LOG_DIR/n_deb.log" 2>&1) & spinner $! "Descargando imagen Debian..." "$LOG_DIR/n_deb.log"
     else
         echo -e "  ${GREEN}✓${NC} Debian ya está instalado."
     fi
@@ -201,9 +203,9 @@ step_debian_packages() {
     update_progress
     echo -e "${CYAN}[+] Configurando entorno gráfico y paquetes base...${NC}"
     
-    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils" > "$LOG_DIR/n_xfce.log" 2>&1 || true) & spinner $! "Instalando XFCE4 y utilidades..." "$LOG_DIR/n_xfce.log"
+    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils" > "$LOG_DIR/n_xfce.log" 2>&1) & spinner $! "Instalando XFCE4 y utilidades..." "$LOG_DIR/n_xfce.log"
     
-    (proot-distro login debian -- sh -c "useradd -m -s /bin/bash $USERNAME 2>/dev/null || true; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > "$LOG_DIR/n_user.log" 2>&1 || true) & spinner $! "Creando usuario desarrollador..." "$LOG_DIR/n_user.log"
+    (proot-distro login debian -- sh -c "id -u $USERNAME >/dev/null 2>&1 || useradd -m -s /bin/bash $USERNAME; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > "$LOG_DIR/n_user.log" 2>&1) & spinner $! "Creando usuario desarrollador..." "$LOG_DIR/n_user.log"
 }
 
 step_mac_theme() {
@@ -226,23 +228,23 @@ Name=Nuntius UI Init
 EOF
 EOF_THEME
     chmod +x "$DEBIAN_ROOT/tmp/theme.sh"
-    (proot-distro login debian -- su - $USERNAME -c "/tmp/theme.sh" > "$LOG_DIR/n_theme.log" 2>&1 || true) & spinner $! "Compilando tema visual..." "$LOG_DIR/n_theme.log"
+    (proot-distro login debian -- su - $USERNAME -c "/tmp/theme.sh" > "$LOG_DIR/n_theme.log" 2>&1) & spinner $! "Compilando tema visual..." "$LOG_DIR/n_theme.log"
 }
 
 step_ide() {
     update_progress
     echo -e "${CYAN}[+] Instalando Nuntius IDE (Google Antigravity)...${NC}"
     mkdir -p "$DEBIAN_ROOT/opt/ide"
-    (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > "$LOG_DIR/n_ide.log" 2>&1 || true) & spinner $! "Descargando binarios del IDE..." "$LOG_DIR/n_ide.log"
-    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz" > "$LOG_DIR/n_ide2.log" 2>&1 || true) & spinner $! "Extrayendo entorno de desarrollo..." "$LOG_DIR/n_ide2.log"
+    (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > "$LOG_DIR/n_ide.log" 2>&1) & spinner $! "Descargando binarios del IDE..." "$LOG_DIR/n_ide.log"
+    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz" > "$LOG_DIR/n_ide2.log" 2>&1) & spinner $! "Extrayendo entorno de desarrollo..." "$LOG_DIR/n_ide2.log"
 }
 
 step_chrome() {
     update_progress
     echo -e "${CYAN}[+] Instalando Google Chrome...${NC}"
-    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && apt install -y /tmp/chrome.deb && rm -f /tmp/chrome.deb" > "$LOG_DIR/n_chrome.log" 2>&1 || true) & spinner $! "Descargando e instalando Chrome..." "$LOG_DIR/n_chrome.log"
+    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && apt install -y /tmp/chrome.deb && rm -f /tmp/chrome.deb" > "$LOG_DIR/n_chrome.log" 2>&1) & spinner $! "Descargando e instalando Chrome..." "$LOG_DIR/n_chrome.log"
 
-    (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real 2>/dev/null; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable 2>/dev/null; chmod +x /usr/bin/google-chrome-stable 2>/dev/null; fi || true" > /dev/null 2>&1) & spinner $! "Aplicando optimización sandbox..." ""
+    (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real 2>/dev/null; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable 2>/dev/null; chmod +x /usr/bin/google-chrome-stable 2>/dev/null; fi" > /dev/null 2>&1) & spinner $! "Aplicando optimización sandbox..." ""
 }
 
 step_shortcuts() {
@@ -276,7 +278,7 @@ EOF
 chmod +x ~/Desktop/*.desktop
 EOF_SHORT
     chmod +x "$DEBIAN_ROOT/tmp/shortcuts.sh"
-    (proot-distro login debian -- su - $USERNAME -c "/tmp/shortcuts.sh" > /dev/null 2>&1 || true) & spinner $! "Generando iconos de acceso..." ""
+    (proot-distro login debian -- su - $USERNAME -c "/tmp/shortcuts.sh" > /dev/null 2>&1) & spinner $! "Generando iconos de acceso..." ""
 }
 
 step_audio() {
