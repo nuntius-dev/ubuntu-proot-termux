@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v9.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v11.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Live Logs
@@ -44,7 +44,6 @@ update_progress() {
     echo ""
 }
 
-# NUEVO SPINNER CON CRONÓMETRO Y LOGS EN VIVO
 spinner() {
     local pid=$1
     local message=$2
@@ -62,11 +61,9 @@ spinner() {
 
         local current_action=""
         if [ -n "$logfile" ] && [ -f "$logfile" ]; then
-            # Lee la última línea, limpia caracteres raros y recorta a 30 caracteres
             current_action=$(tail -n 1 "$logfile" | tr -cd '[:print:]' | cut -c 1-35)
         fi
 
-        # \033[K borra el resto de la línea para evitar texto sobrepuesto
         printf "\r\033[K  ${YELLOW}⏳${NC} ${message} [${CYAN}${time_str}${NC}] ${CYAN}${spin:$i:1}${NC} ${GRAY}${current_action}${NC}"
         sleep 0.3
     done
@@ -78,7 +75,7 @@ spinner() {
     local secs=$((elapsed % 60))
     local time_str=$(printf "%02d:%02d" $mins $secs)
 
-    printf "\r\033[K" # Limpiar la línea al terminar
+    printf "\r\033[K" 
     if [ $exit_code -eq 0 ]; then
         printf "  ${GREEN}✓${NC} ${message} [${CYAN}${time_str}${NC}]\n"
     else
@@ -94,13 +91,12 @@ spinner() {
 show_banner() {
     clear
     echo -e "${CYAN}========================================${NC}"
-    echo -e "  🚀 ${WHITE}NUNTIUS DEV ENVIRONMENT v9.0${NC} 🚀"
+    echo -e "  🚀 ${WHITE}NUNTIUS DEV ENVIRONMENT v11.0${NC} 🚀"
     echo -e "         https://nuntius.dev"
     echo -e "${CYAN}========================================${NC}"
     echo ""
 }
 
-# NUEVO PASO: PERMISOS AUTOMÁTICOS
 check_permissions() {
     if [ ! -d "$HOME/storage" ]; then
         show_banner
@@ -138,24 +134,27 @@ step_base() {
     echo "tzdata tzdata/Zones/America select Santiago" | debconf-set-selections 2>/dev/null || true
     ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
 
-    # Ahora incluimos las actualizaciones de Termux que pediste dentro del script
-    (yes | pkg update -y > /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando listas..." "/tmp/n_base.log"
-    (DEBIAN_FRONTEND=noninteractive yes "" | pkg upgrade -y -o Dpkg::Options::="--force-confnew" >> /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..." "/tmp/n_base.log"
-    (yes | pkg install -y x11-repo tur-repo >> /tmp/n_base.log 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..." "/tmp/n_base.log"
-    (yes | pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget >> /tmp/n_base.log 2>&1 || true) & spinner $! "Instalando dependencias core..." "/tmp/n_base.log"
+    # SOLUCIÓN V11: Ejecución pura y directa
+    (pkg update -y > /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando listas..." "/tmp/n_base.log"
+    
+    (DEBIAN_FRONTEND=noninteractive pkg upgrade -y -o Dpkg::Options::="--force-confnew" -o Dpkg::Options::="--force-confdef" >> /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..." "/tmp/n_base.log"
+    
+    (pkg install -y x11-repo tur-repo >> /tmp/n_base.log 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..." "/tmp/n_base.log"
+    
+    (pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget >> /tmp/n_base.log 2>&1 || true) & spinner $! "Instalando dependencias core..." "/tmp/n_base.log"
 }
 
 step_gpu() {
     update_progress
     echo -e "${CYAN}[+] Configurando Aceleración de Hardware (GPU)...${NC}"
     
-    (yes | pkg uninstall -y vulkan-loader-generic > /tmp/n_gpu.log 2>&1 || true) & spinner $! "Resolviendo conflictos Vulkan..." "/tmp/n_gpu.log"
-    (yes | pkg install -y mesa-zink vulkan-loader-android >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando backend de Vulkan nativo..." "/tmp/n_gpu.log"
+    (pkg uninstall -y vulkan-loader-generic > /tmp/n_gpu.log 2>&1 || true) & spinner $! "Resolviendo conflictos Vulkan..." "/tmp/n_gpu.log"
+    (pkg install -y mesa-zink vulkan-loader-android >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando backend de Vulkan nativo..." "/tmp/n_gpu.log"
 
     if [ "$GPU_DRIVER" == "freedreno" ]; then
-        (yes | pkg install -y mesa-vulkan-icd-freedreno >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando drivers Turnip (Adreno)..." "/tmp/n_gpu.log"
+        (pkg install -y mesa-vulkan-icd-freedreno >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando drivers Turnip (Adreno)..." "/tmp/n_gpu.log"
     else
-        (yes | pkg install -y mesa-vulkan-icd-swrast >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..." "/tmp/n_gpu.log"
+        (pkg install -y mesa-vulkan-icd-swrast >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..." "/tmp/n_gpu.log"
     fi
 
     mkdir -p ~/.config
@@ -174,8 +173,8 @@ GPUEOF
 step_wine() {
     update_progress
     echo -e "${CYAN}[+] Instalando capa de compatibilidad Windows (Wine)...${NC}"
-    (yes | pkg remove wine-stable -y > /tmp/n_wine.log 2>&1 || true)
-    (yes | pkg install -y hangover-wine hangover-wowbox64 >> /tmp/n_wine.log 2>&1 || true) & spinner $! "Instalando Hangover-Wine y Box64..." "/tmp/n_wine.log"
+    (pkg remove wine-stable -y > /tmp/n_wine.log 2>&1 || true)
+    (pkg install -y hangover-wine hangover-wowbox64 >> /tmp/n_wine.log 2>&1 || true) & spinner $! "Instalando Hangover-Wine y Box64..." "/tmp/n_wine.log"
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/wine /data/data/com.termux/files/usr/bin/wine 2>/dev/null || true
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/winecfg /data/data/com.termux/files/usr/bin/winecfg 2>/dev/null || true
 }
@@ -194,10 +193,9 @@ step_debian_packages() {
     update_progress
     echo -e "${CYAN}[+] Configurando entorno gráfico y paquetes base...${NC}"
     
-    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils" > /tmp/n_xfce.log 2>&1) & spinner $! "Instalando XFCE4 y utilidades..." "/tmp/n_xfce.log"
+    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils" > /tmp/n_xfce.log 2>&1 || true) & spinner $! "Instalando XFCE4 y utilidades..." "/tmp/n_xfce.log"
     
-    # SOLUCIÓN V9: Uso de 'sh -c' puro y comandos simplificados a prueba de fallos
-    (proot-distro login debian -- sh -c "useradd -m -s /bin/bash $USERNAME 2>/dev/null || true; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > /tmp/n_user.log 2>&1) & spinner $! "Creando usuario desarrollador..." "/tmp/n_user.log"
+    (proot-distro login debian -- sh -c "useradd -m -s /bin/bash $USERNAME 2>/dev/null || true; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > /tmp/n_user.log 2>&1 || true) & spinner $! "Creando usuario desarrollador..." "/tmp/n_user.log"
 }
 
 step_mac_theme() {
@@ -227,7 +225,7 @@ step_ide() {
     echo -e "${CYAN}[+] Instalando Nuntius IDE (Google Antigravity)...${NC}"
     mkdir -p "$DEBIAN_ROOT/opt/ide"
     (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > /tmp/n_ide.log 2>&1 || true) & spinner $! "Descargando binarios del IDE..." "/tmp/n_ide.log"
-    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz" > /tmp/n_ide2.log 2>&1) & spinner $! "Extrayendo entorno de desarrollo..." "/tmp/n_ide2.log"
+    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz" > /tmp/n_ide2.log 2>&1 || true) & spinner $! "Extrayendo entorno de desarrollo..." "/tmp/n_ide2.log"
 }
 
 step_chrome() {
