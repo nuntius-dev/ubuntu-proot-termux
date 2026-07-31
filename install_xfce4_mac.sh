@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v6.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v7.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Wine,
@@ -71,7 +71,7 @@ show_banner() {
     cat << 'BANNER'
     ╔══════════════════════════════════════════════╗
     ║                                              ║
-    ║   🚀  NUNTIUS DEV ENVIRONMENT v6.0  🚀       ║
+    ║   🚀  NUNTIUS DEV ENVIRONMENT v7.0  🚀       ║
     ║                                              ║
     ║            https://nuntius.dev               ║
     ║                                              ║
@@ -116,7 +116,8 @@ step_base() {
 step_gpu() {
     update_progress
     echo -e "${CYAN}[+] Configurando Aceleración de Hardware (GPU)...${NC}"
-    (yes | pkg install -y mesa-zink vulkan-loader-android > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan..."
+    # SOLUCIÓN V7: Usar vulkan-loader-generic para evitar el conflicto con termux-x11
+    (yes | pkg install -y mesa-zink vulkan-loader-generic > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan..."
 
     if [ "$GPU_DRIVER" == "freedreno" ]; then
         (yes | pkg install -y mesa-vulkan-icd-freedreno > /dev/null 2>&1 || true) & spinner $! "Instalando drivers Turnip..."
@@ -162,7 +163,6 @@ step_debian_packages() {
     
     (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils > /dev/null 2>&1 || true") & spinner $! "Instalando XFCE4 y utilidades..."
     
-    # SOLUCIÓN V6: Condicional robusto y ruta absoluta para creación de usuario
     (proot-distro login debian -- bash -c "if ! id -u $USERNAME >/dev/null 2>&1; then /usr/sbin/useradd -m -s /bin/bash $USERNAME; fi; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > /dev/null 2>&1 || true) & spinner $! "Creando usuario desarrollador..."
 }
 
