@@ -1,17 +1,16 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v16.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v17.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Live Logs
 #######################################################
 
 # ============== CONFIGURACIÓN ==============
-SCRIPT_VERSION="v16.0"
+SCRIPT_VERSION="v17.0"
 TOTAL_STEPS=12
 CURRENT_STEP=0
 USERNAME="devroom"
-DEBIAN_ROOT="${PREFIX:-/data/data/com.termux/files/usr}/var/lib/proot-distro/installed-rootfs/debian"
 LOG_DIR="${PREFIX:-/data/data/com.termux/files/usr}/tmp"
 mkdir -p "$LOG_DIR"
 
@@ -195,7 +194,7 @@ step_wine() {
 step_debian() {
     update_progress
     echo -e "${CYAN}[+] Instalando Subsistema Debian...${NC}"
-    if [ ! -d "$DEBIAN_ROOT" ]; then
+    if [ ! -d "${PREFIX:-/data/data/com.termux/files/usr}/var/lib/proot-distro/installed-rootfs/debian" ]; then
         (proot-distro install debian > "$LOG_DIR/n_deb.log" 2>&1) & spinner $! "Descargando imagen Debian..." "$LOG_DIR/n_deb.log"
     else
         echo -e "  ${GREEN}✓${NC} Debian ya está instalado."
@@ -215,7 +214,6 @@ step_mac_theme() {
     update_progress
     echo -e "${CYAN}[+] Aplicando Nuntius UI (macOS Estética)...${NC}"
     
-    # EJECUCIÓN DIRECTA POR HEREDOC (Sin archivos temporales en /tmp)
     (run_debian_user << 'EOF_THEME' > "$LOG_DIR/n_theme.log" 2>&1
 mkdir -p ~/.themes ~/.icons ~/.config/autostart ~/Pictures
 wget -qO ~/Pictures/mac-wallpaper.jpg "https://raw.githubusercontent.com/vinceliuice/WhiteSur-wallpapers/master/1080p/BigSur-1.jpg"
@@ -236,9 +234,29 @@ EOF_THEME
 step_ide() {
     update_progress
     echo -e "${CYAN}[+] Instalando Nuntius IDE (Google Antigravity)...${NC}"
-    mkdir -p "$DEBIAN_ROOT/opt/ide"
-    (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > "$LOG_DIR/n_ide.log" 2>&1) & spinner $! "Descargando binarios del IDE..." "$LOG_DIR/n_ide.log"
-    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz" > "$LOG_DIR/n_ide2.log" 2>&1) & spinner $! "Extrayendo entorno de desarrollo..." "$LOG_DIR/n_ide2.log"
+
+    (
+        proot-distro login debian -- bash -c "
+            mkdir -p /opt/ide
+            cd /opt/ide
+
+            wget -O Antigravity.tar.gz '$ANTIGRAVITY_DL'
+
+            tar -xzf Antigravity.tar.gz
+
+            DIR=\$(find . -maxdepth 1 -type d -name 'Antigravity*' | head -1)
+
+            if [ -n \"\$DIR\" ] && [ \"\$DIR\" != './Antigravity' ]; then
+                mv \"\$DIR\" Antigravity
+            fi
+
+            chmod +x Antigravity/bin/antigravity
+
+            rm -f Antigravity.tar.gz
+        "
+    ) > "$LOG_DIR/n_ide.log" 2>&1 &
+
+    spinner $! "Instalando Antigravity..." "$LOG_DIR/n_ide.log"
 }
 
 step_chrome() {
@@ -253,7 +271,6 @@ step_shortcuts() {
     update_progress
     echo -e "${CYAN}[+] Creando accesos directos en el escritorio...${NC}"
     
-    # EJECUCIÓN DIRECTA POR HEREDOC (Sin archivos temporales de enlaces)
     (run_debian_user << 'EOF_SHORT' > "$LOG_DIR/n_shortcuts.log" 2>&1
 mkdir -p ~/Desktop
 cat <<EOF > ~/Desktop/antigravity.desktop
@@ -261,7 +278,7 @@ cat <<EOF > ~/Desktop/antigravity.desktop
 Version=1.0
 Type=Application
 Name=Antigravity IDE
-Exec=/opt/ide/Antigravity/bin/antigravity --no-sandbox
+Exec=bash -c "/opt/ide/Antigravity/bin/antigravity --no-sandbox"
 Icon=applications-development
 Terminal=false
 Categories=Development;IDE;
