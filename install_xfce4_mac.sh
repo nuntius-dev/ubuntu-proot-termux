@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v5.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v6.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Wine,
@@ -71,7 +71,7 @@ show_banner() {
     cat << 'BANNER'
     ╔══════════════════════════════════════════════╗
     ║                                              ║
-    ║   🚀  NUNTIUS DEV ENVIRONMENT v5.0  🚀       ║
+    ║   🚀  NUNTIUS DEV ENVIRONMENT v6.0  🚀       ║
     ║                                              ║
     ║            https://nuntius.dev               ║
     ║                                              ║
@@ -103,7 +103,6 @@ step_base() {
 
     export DEBIAN_FRONTEND=noninteractive
 
-    # Preconfigurar timezone para que tzdata no pregunte nada en el entorno Termux
     echo "tzdata tzdata/Areas select America" | debconf-set-selections 2>/dev/null || true
     echo "tzdata tzdata/Zones/America select Santiago" | debconf-set-selections 2>/dev/null || true
     ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
@@ -161,9 +160,10 @@ step_debian_packages() {
     update_progress
     echo -e "${CYAN}[+] Configurando entorno gráfico y paquetes base...${NC}"
     
-    # Inyección de variables directas para blindar apt dentro de Debian
     (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils > /dev/null 2>&1 || true") & spinner $! "Instalando XFCE4 y utilidades..."
-    (proot-distro login debian -- sh -c "id -u $USERNAME &>/dev/null || useradd -m $USERNAME && passwd -d $USERNAME && echo '$USERNAME ALL=(ALL) ALL' > /etc/sudoers.d/$USERNAME && chmod 440 /etc/sudoers.d/$USERNAME || true") & spinner $! "Creando usuario desarrollador..."
+    
+    # SOLUCIÓN V6: Condicional robusto y ruta absoluta para creación de usuario
+    (proot-distro login debian -- bash -c "if ! id -u $USERNAME >/dev/null 2>&1; then /usr/sbin/useradd -m -s /bin/bash $USERNAME; fi; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > /dev/null 2>&1 || true) & spinner $! "Creando usuario desarrollador..."
 }
 
 step_mac_theme() {
