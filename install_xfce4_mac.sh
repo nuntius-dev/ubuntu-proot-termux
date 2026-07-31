@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v3.1
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v4.0
 #  
 #  Sitio Web: https://nuntius.dev
 #  Incluye: XFCE4, Tema Mac, GPU Accel, Wine,
@@ -71,7 +71,7 @@ show_banner() {
     cat << 'BANNER'
     ╔══════════════════════════════════════════════╗
     ║                                              ║
-    ║   🚀  NUNTIUS DEV ENVIRONMENT v3.1  🚀       ║
+    ║   🚀  NUNTIUS DEV ENVIRONMENT v4.0  🚀       ║
     ║                                              ║
     ║            https://nuntius.dev               ║
     ║                                              ║
@@ -100,21 +100,22 @@ detect_device() {
 step_base() {
     update_progress
     echo -e "${CYAN}[+] Preparando entorno base de Termux...${NC}"
-    # SOLUCIÓN AQUÍ: Forzamos confirmación automática y evitamos bloqueos con '|| true'
-    (pkg update -y && pkg upgrade -y -o Dpkg::Options::="--force-confnew" > /dev/null 2>&1 || true) & spinner $! "Actualizando paquetes..."
-    (pkg install -y x11-repo tur-repo > /dev/null 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..."
-    (pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget > /dev/null 2>&1 || true) & spinner $! "Instalando dependencias core..."
+    # SOLUCIÓN 4.0: Usar 'yes' para responder a todas las preguntas ocultas de Termux
+    (yes | pkg update -y > /dev/null 2>&1 || true) & spinner $! "Actualizando listas..."
+    (yes "" | pkg upgrade -y -o Dpkg::Options::="--force-confnew" > /dev/null 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..."
+    (yes | pkg install -y x11-repo tur-repo > /dev/null 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..."
+    (yes | pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget > /dev/null 2>&1 || true) & spinner $! "Instalando dependencias core..."
 }
 
 step_gpu() {
     update_progress
     echo -e "${CYAN}[+] Configurando Aceleración de Hardware (GPU)...${NC}"
-    (pkg install -y mesa-zink vulkan-loader-android > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan..."
+    (yes | pkg install -y mesa-zink vulkan-loader-android > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan..."
     
     if [ "$GPU_DRIVER" == "freedreno" ]; then
-        (pkg install -y mesa-vulkan-icd-freedreno > /dev/null 2>&1 || true) & spinner $! "Instalando drivers Turnip..."
+        (yes | pkg install -y mesa-vulkan-icd-freedreno > /dev/null 2>&1 || true) & spinner $! "Instalando drivers Turnip..."
     else
-        (pkg install -y mesa-vulkan-icd-swrast > /dev/null 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..."
+        (yes | pkg install -y mesa-vulkan-icd-swrast > /dev/null 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..."
     fi
 
     mkdir -p ~/.config
@@ -133,8 +134,8 @@ GPUEOF
 step_wine() {
     update_progress
     echo -e "${CYAN}[+] Instalando capa de compatibilidad Windows (Wine)...${NC}"
-    (pkg remove wine-stable -y > /dev/null 2>&1 || true)
-    (pkg install -y hangover-wine hangover-wowbox64 > /dev/null 2>&1 || true) & spinner $! "Instalando Hangover-Wine y Box64..."
+    (yes | pkg remove wine-stable -y > /dev/null 2>&1 || true)
+    (yes | pkg install -y hangover-wine hangover-wowbox64 > /dev/null 2>&1 || true) & spinner $! "Instalando Hangover-Wine y Box64..."
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/wine /data/data/com.termux/files/usr/bin/wine 2>/dev/null || true
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/winecfg /data/data/com.termux/files/usr/bin/winecfg 2>/dev/null || true
 }
@@ -143,7 +144,7 @@ step_debian() {
     update_progress
     echo -e "${CYAN}[+] Instalando Subsistema Debian...${NC}"
     if [ ! -d "$DEBIAN_ROOT" ]; then
-        (proot-distro install debian > /dev/null 2>&1) & spinner $! "Descargando imagen Debian..."
+        (proot-distro install debian > /dev/null 2>&1 || true) & spinner $! "Descargando imagen Debian..."
     else
         echo -e "  ${GREEN}✓${NC} Debian ya está instalado."
     fi
@@ -153,7 +154,7 @@ step_debian_packages() {
     update_progress
     echo -e "${CYAN}[+] Configurando entorno gráfico y paquetes base...${NC}"
     (proot-distro login debian -- sh -c "apt update -y && DEBIAN_FRONTEND=noninteractive apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils > /dev/null 2>&1 || true") & spinner $! "Instalando XFCE4 y utilidades..."
-    (proot-distro login debian -- sh -c "id -u $USERNAME &>/dev/null || useradd -m $USERNAME && passwd -d $USERNAME && echo '$USERNAME ALL=(ALL) ALL' > /etc/sudoers.d/$USERNAME && chmod 440 /etc/sudoers.d/$USERNAME") & spinner $! "Creando usuario desarrollador..."
+    (proot-distro login debian -- sh -c "id -u $USERNAME &>/dev/null || useradd -m $USERNAME && passwd -d $USERNAME && echo '$USERNAME ALL=(ALL) ALL' > /etc/sudoers.d/$USERNAME && chmod 440 /etc/sudoers.d/$USERNAME || true") & spinner $! "Creando usuario desarrollador..."
 }
 
 step_mac_theme() {
@@ -182,8 +183,8 @@ step_ide() {
     update_progress
     echo -e "${CYAN}[+] Instalando Nuntius IDE (Google Antigravity)...${NC}"
     mkdir -p "$DEBIAN_ROOT/opt/ide"
-    (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > /dev/null 2>&1) & spinner $! "Descargando binarios del IDE..."
-    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm Antigravity.tar.gz") & spinner $! "Extrayendo entorno de desarrollo..."
+    (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > /dev/null 2>&1 || true) & spinner $! "Descargando binarios del IDE..."
+    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz") & spinner $! "Extrayendo entorno de desarrollo..."
 }
 
 step_chrome() {
@@ -191,7 +192,7 @@ step_chrome() {
     echo -e "${CYAN}[+] Instalando Google Chrome...${NC}"
     (proot-distro login debian -- sh -c "wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && DEBIAN_FRONTEND=noninteractive apt install -y /tmp/chrome.deb > /dev/null 2>&1 && rm -f /tmp/chrome.deb || true") & spinner $! "Descargando e instalando Chrome..."
     
-    (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable; chmod +x /usr/bin/google-chrome-stable; fi") & spinner $! "Aplicando optimización sandbox..."
+    (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real 2>/dev/null; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable 2>/dev/null; chmod +x /usr/bin/google-chrome-stable 2>/dev/null; fi || true") & spinner $! "Aplicando optimización sandbox..."
 }
 
 step_shortcuts() {
