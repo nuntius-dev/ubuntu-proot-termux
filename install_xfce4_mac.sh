@@ -1,10 +1,9 @@
 #!/data/data/com.termux/files/usr/bin/bash
 #######################################################
-#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v8.0
+#  🚀 NUNTIUS DEV ENVIRONMENT - Ultimate Master v9.0
 #  
 #  Sitio Web: https://nuntius.dev
-#  Incluye: XFCE4, Tema Mac, GPU Accel, Wine,
-#           Antigravity IDE & Google Chrome
+#  Incluye: XFCE4, Tema Mac, GPU Accel, Live Logs
 #######################################################
 
 # ============== CONFIGURACIÓN ==============
@@ -45,39 +44,72 @@ update_progress() {
     echo ""
 }
 
+# NUEVO SPINNER CON CRONÓMETRO Y LOGS EN VIVO
 spinner() {
     local pid=$1
     local message=$2
+    local logfile=$3
     local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     local i=0
+    local start_time=$(date +%s)
 
     while kill -0 $pid 2>/dev/null; do
         i=$(( (i+1) % 10 ))
-        printf "\r  ${YELLOW}⏳${NC} ${message} ${CYAN}${spin:$i:1}${NC}  "
-        sleep 0.1
+        local elapsed=$(($(date +%s) - start_time))
+        local mins=$((elapsed / 60))
+        local secs=$((elapsed % 60))
+        local time_str=$(printf "%02d:%02d" $mins $secs)
+
+        local current_action=""
+        if [ -n "$logfile" ] && [ -f "$logfile" ]; then
+            # Lee la última línea, limpia caracteres raros y recorta a 30 caracteres
+            current_action=$(tail -n 1 "$logfile" | tr -cd '[:print:]' | cut -c 1-35)
+        fi
+
+        # \033[K borra el resto de la línea para evitar texto sobrepuesto
+        printf "\r\033[K  ${YELLOW}⏳${NC} ${message} [${CYAN}${time_str}${NC}] ${CYAN}${spin:$i:1}${NC} ${GRAY}${current_action}${NC}"
+        sleep 0.3
     done
     wait $pid
-    if [ $? -eq 0 ]; then
-        printf "\r  ${GREEN}✓${NC} ${message}                    \n"
+    local exit_code=$?
+    
+    local elapsed=$(($(date +%s) - start_time))
+    local mins=$((elapsed / 60))
+    local secs=$((elapsed % 60))
+    local time_str=$(printf "%02d:%02d" $mins $secs)
+
+    printf "\r\033[K" # Limpiar la línea al terminar
+    if [ $exit_code -eq 0 ]; then
+        printf "  ${GREEN}✓${NC} ${message} [${CYAN}${time_str}${NC}]\n"
     else
-        printf "\r  ${RED}✗${NC} ${message} ${RED}(falló)${NC}     \n"
+        printf "  ${RED}✗${NC} ${message} (falló) [${CYAN}${time_str}${NC}]\n"
+        if [ -n "$logfile" ] && [ -f "$logfile" ]; then
+            echo -e "\n${RED}[!] Últimos registros del error:${NC}"
+            tail -n 5 "$logfile"
+        fi
         exit 1
     fi
 }
 
 show_banner() {
     clear
-    echo -e "${CYAN}"
-    cat << 'BANNER'
-    ╔══════════════════════════════════════════════╗
-    ║                                              ║
-    ║   🚀  NUNTIUS DEV ENVIRONMENT v8.0  🚀       ║
-    ║                                              ║
-    ║            https://nuntius.dev               ║
-    ║                                              ║
-    ╚══════════════════════════════════════════════╝
-BANNER
-    echo -e "${NC}"
+    echo -e "${CYAN}========================================${NC}"
+    echo -e "  🚀 ${WHITE}NUNTIUS DEV ENVIRONMENT v9.0${NC} 🚀"
+    echo -e "         https://nuntius.dev"
+    echo -e "${CYAN}========================================${NC}"
+    echo ""
+}
+
+# NUEVO PASO: PERMISOS AUTOMÁTICOS
+check_permissions() {
+    if [ ! -d "$HOME/storage" ]; then
+        show_banner
+        echo -e "${YELLOW}[!] Configuración Inicial Requerida${NC}"
+        echo -e "Nuntius necesita acceso al almacenamiento para funcionar."
+        echo -e "Por favor, ${WHITE}ACEPTA${NC} la ventana emergente en tu teléfono...\n"
+        termux-setup-storage
+        sleep 5
+    fi
 }
 
 detect_device() {
@@ -102,29 +134,28 @@ step_base() {
     echo -e "${CYAN}[+] Preparando entorno base de Termux...${NC}"
 
     export DEBIAN_FRONTEND=noninteractive
-
     echo "tzdata tzdata/Areas select America" | debconf-set-selections 2>/dev/null || true
     echo "tzdata tzdata/Zones/America select Santiago" | debconf-set-selections 2>/dev/null || true
     ln -sf /usr/share/zoneinfo/America/Santiago /etc/localtime 2>/dev/null || true
 
-    (yes | pkg update -y > /dev/null 2>&1 || true) & spinner $! "Actualizando listas..."
-    (DEBIAN_FRONTEND=noninteractive yes "" | pkg upgrade -y -o Dpkg::Options::="--force-confnew" > /dev/null 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..."
-    (yes | pkg install -y x11-repo tur-repo > /dev/null 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..."
-    (yes | pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget > /dev/null 2>&1 || true) & spinner $! "Instalando dependencias core..."
+    # Ahora incluimos las actualizaciones de Termux que pediste dentro del script
+    (yes | pkg update -y > /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando listas..." "/tmp/n_base.log"
+    (DEBIAN_FRONTEND=noninteractive yes "" | pkg upgrade -y -o Dpkg::Options::="--force-confnew" >> /tmp/n_base.log 2>&1 || true) & spinner $! "Actualizando paquetes del sistema..." "/tmp/n_base.log"
+    (yes | pkg install -y x11-repo tur-repo >> /tmp/n_base.log 2>&1 || true) & spinner $! "Añadiendo repositorios avanzados..." "/tmp/n_base.log"
+    (yes | pkg install -y proot-distro pulseaudio termux-x11-nightly aria2 wget >> /tmp/n_base.log 2>&1 || true) & spinner $! "Instalando dependencias core..." "/tmp/n_base.log"
 }
 
 step_gpu() {
     update_progress
     echo -e "${CYAN}[+] Configurando Aceleración de Hardware (GPU)...${NC}"
     
-    # SOLUCIÓN V8: Purgar el loader genérico e instalar el nativo de Android
-    (yes | pkg uninstall -y vulkan-loader-generic > /dev/null 2>&1 || true) & spinner $! "Resolviendo conflictos de dependencias Vulkan..."
-    (yes | pkg install -y mesa-zink vulkan-loader-android > /dev/null 2>&1 || true) & spinner $! "Instalando backend de Vulkan nativo..."
+    (yes | pkg uninstall -y vulkan-loader-generic > /tmp/n_gpu.log 2>&1 || true) & spinner $! "Resolviendo conflictos Vulkan..." "/tmp/n_gpu.log"
+    (yes | pkg install -y mesa-zink vulkan-loader-android >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando backend de Vulkan nativo..." "/tmp/n_gpu.log"
 
     if [ "$GPU_DRIVER" == "freedreno" ]; then
-        (yes | pkg install -y mesa-vulkan-icd-freedreno > /dev/null 2>&1 || true) & spinner $! "Instalando drivers Turnip (Adreno)..."
+        (yes | pkg install -y mesa-vulkan-icd-freedreno >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando drivers Turnip (Adreno)..." "/tmp/n_gpu.log"
     else
-        (yes | pkg install -y mesa-vulkan-icd-swrast > /dev/null 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..."
+        (yes | pkg install -y mesa-vulkan-icd-swrast >> /tmp/n_gpu.log 2>&1 || true) & spinner $! "Instalando drivers de compatibilidad..." "/tmp/n_gpu.log"
     fi
 
     mkdir -p ~/.config
@@ -143,8 +174,8 @@ GPUEOF
 step_wine() {
     update_progress
     echo -e "${CYAN}[+] Instalando capa de compatibilidad Windows (Wine)...${NC}"
-    (yes | pkg remove wine-stable -y > /dev/null 2>&1 || true)
-    (yes | pkg install -y hangover-wine hangover-wowbox64 > /dev/null 2>&1 || true) & spinner $! "Instalando Hangover-Wine y Box64..."
+    (yes | pkg remove wine-stable -y > /tmp/n_wine.log 2>&1 || true)
+    (yes | pkg install -y hangover-wine hangover-wowbox64 >> /tmp/n_wine.log 2>&1 || true) & spinner $! "Instalando Hangover-Wine y Box64..." "/tmp/n_wine.log"
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/wine /data/data/com.termux/files/usr/bin/wine 2>/dev/null || true
     ln -sf /data/data/com.termux/files/usr/opt/hangover-wine/bin/winecfg /data/data/com.termux/files/usr/bin/winecfg 2>/dev/null || true
 }
@@ -153,7 +184,7 @@ step_debian() {
     update_progress
     echo -e "${CYAN}[+] Instalando Subsistema Debian...${NC}"
     if [ ! -d "$DEBIAN_ROOT" ]; then
-        (proot-distro install debian > /dev/null 2>&1 || true) & spinner $! "Descargando imagen Debian..."
+        (proot-distro install debian > /tmp/n_deb.log 2>&1 || true) & spinner $! "Descargando imagen Debian..." "/tmp/n_deb.log"
     else
         echo -e "  ${GREEN}✓${NC} Debian ya está instalado."
     fi
@@ -163,9 +194,10 @@ step_debian_packages() {
     update_progress
     echo -e "${CYAN}[+] Configurando entorno gráfico y paquetes base...${NC}"
     
-    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils > /dev/null 2>&1 || true") & spinner $! "Instalando XFCE4 y utilidades..."
+    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; export TZ=America/Santiago; apt update -y && apt install -y sudo xfce4 xfce4-terminal plank thunar git sassc wget curl dbus-x11 gnupg xdg-utils" > /tmp/n_xfce.log 2>&1) & spinner $! "Instalando XFCE4 y utilidades..." "/tmp/n_xfce.log"
     
-    (proot-distro login debian -- bash -c "if ! id -u $USERNAME >/dev/null 2>&1; then /usr/sbin/useradd -m -s /bin/bash $USERNAME; fi; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > /dev/null 2>&1 || true) & spinner $! "Creando usuario desarrollador..."
+    # SOLUCIÓN V9: Uso de 'sh -c' puro y comandos simplificados a prueba de fallos
+    (proot-distro login debian -- sh -c "useradd -m -s /bin/bash $USERNAME 2>/dev/null || true; passwd -d $USERNAME; mkdir -p /etc/sudoers.d; echo '$USERNAME ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/$USERNAME; chmod 440 /etc/sudoers.d/$USERNAME" > /tmp/n_user.log 2>&1) & spinner $! "Creando usuario desarrollador..." "/tmp/n_user.log"
 }
 
 step_mac_theme() {
@@ -187,23 +219,23 @@ Name=Nuntius UI Init
 EOF
 EOF_THEME
     chmod +x "$DEBIAN_ROOT/tmp/theme.sh"
-    (proot-distro login debian -- su - $USERNAME -c "/tmp/theme.sh" > /dev/null 2>&1 || true) & spinner $! "Compilando tema visual..."
+    (proot-distro login debian -- su - $USERNAME -c "/tmp/theme.sh" > /tmp/n_theme.log 2>&1 || true) & spinner $! "Compilando tema visual..." "/tmp/n_theme.log"
 }
 
 step_ide() {
     update_progress
     echo -e "${CYAN}[+] Instalando Nuntius IDE (Google Antigravity)...${NC}"
     mkdir -p "$DEBIAN_ROOT/opt/ide"
-    (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > /dev/null 2>&1 || true) & spinner $! "Descargando binarios del IDE..."
-    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz") & spinner $! "Extrayendo entorno de desarrollo..."
+    (aria2c -x 8 -s 8 -d "$DEBIAN_ROOT/opt/ide" -o Antigravity.tar.gz "$ANTIGRAVITY_DL" > /tmp/n_ide.log 2>&1 || true) & spinner $! "Descargando binarios del IDE..." "/tmp/n_ide.log"
+    (proot-distro login debian -- sh -c "cd /opt/ide && tar -xzf Antigravity.tar.gz && mv Antigravity-* Antigravity 2>/dev/null || true && chmod +x Antigravity/bin/antigravity && rm -f Antigravity.tar.gz" > /tmp/n_ide2.log 2>&1) & spinner $! "Extrayendo entorno de desarrollo..." "/tmp/n_ide2.log"
 }
 
 step_chrome() {
     update_progress
     echo -e "${CYAN}[+] Instalando Google Chrome...${NC}"
-    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && apt install -y /tmp/chrome.deb > /dev/null 2>&1 && rm -f /tmp/chrome.deb || true") & spinner $! "Descargando e instalando Chrome..."
+    (proot-distro login debian -- sh -c "export DEBIAN_FRONTEND=noninteractive; wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_arm64.deb -O /tmp/chrome.deb && apt install -y /tmp/chrome.deb && rm -f /tmp/chrome.deb" > /tmp/n_chrome.log 2>&1 || true) & spinner $! "Descargando e instalando Chrome..." "/tmp/n_chrome.log"
 
-    (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real 2>/dev/null; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable 2>/dev/null; chmod +x /usr/bin/google-chrome-stable 2>/dev/null; fi || true") & spinner $! "Aplicando optimización sandbox..."
+    (proot-distro login debian -- sh -c "if [ ! -f /usr/bin/google-chrome-stable-real ]; then mv /usr/bin/google-chrome-stable /usr/bin/google-chrome-stable-real 2>/dev/null; echo -e '#!/bin/bash\nexec /usr/bin/google-chrome-stable-real --no-sandbox \"\$@\"' > /usr/bin/google-chrome-stable 2>/dev/null; chmod +x /usr/bin/google-chrome-stable 2>/dev/null; fi || true" > /dev/null 2>&1) & spinner $! "Aplicando optimización sandbox..." ""
 }
 
 step_shortcuts() {
@@ -236,7 +268,7 @@ EOF
 chmod +x ~/Desktop/*.desktop
 EOF_SHORT
     chmod +x "$DEBIAN_ROOT/tmp/shortcuts.sh"
-    (proot-distro login debian -- su - $USERNAME -c "/tmp/shortcuts.sh" > /dev/null 2>&1 || true) & spinner $! "Generando iconos de acceso..."
+    (proot-distro login debian -- su - $USERNAME -c "/tmp/shortcuts.sh" > /dev/null 2>&1 || true) & spinner $! "Generando iconos de acceso..." ""
 }
 
 step_audio() {
@@ -285,6 +317,7 @@ show_completion() {
 
 # ============== EJECUCIÓN ==============
 main() {
+    check_permissions
     show_banner
     detect_device
     step_base
