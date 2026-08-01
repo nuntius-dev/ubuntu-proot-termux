@@ -1,62 +1,55 @@
-# 🐧 Ubuntu PRoot Termux (XFCE + Antigravity IDE + Chrome)
+# 🐧 Nuntius Dev Environment (Debian / XFCE4 + Antigravity IDE + Chrome)
 
-Este repositorio contiene un script de instalación **100% automatizado (zero-touch)** para desplegar un entorno de escritorio Ubuntu completo (XFCE) directamente en tu dispositivo Android usando Termux y PRoot.
+Este repositorio contiene un script de instalación **100% automatizado (zero-touch)** para desplegar un entorno de escritorio Linux completo (XFCE4) con estética macOS, aceleración gráfica por hardware (Turnip/Zink), Wine y herramientas de desarrollo directamente en tu dispositivo Android usando Termux y PRoot-distro.
 
-El script está optimizado para desarrolladores e incluye las versiones oficiales de **Google Chrome (ARM64)** y **Antigravity IDE**, listos para usarse con los parches necesarios para funcionar en contenedores (solucionando el error de inicio de sesión de Google/OAuth).
+El script está optimizado para desarrolladores e incluye las versiones oficiales de **Google Chrome (ARM64)** y **Antigravity IDE**, listos para usarse con optimizaciones de rendimiento y wrappers de seguridad para entornos en contenedores.
 
 ## ✨ Características
 
-* **Automatizado:** No requiere interacción del usuario (ni nombres, ni contraseñas, ni repositorios manuales).
-* **Entorno Gráfico:** Instala XFCE4 preconfigurado para correr sobre VNC.
-* **Chrome Parcheado:** Incluye un "Wrapper" automático que inyecta `--no-sandbox` para que Chrome funcione y permita inicios de sesión desde aplicaciones de terceros.
-* **Seguridad y Rendimiento:** Configura `sudoers` correctamente y aplica bloqueos de suspensión (WakeLock) para evitar congelamientos.
+* **Automatizado (Zero-Touch):** Configuración de zonas horarias, repositorios avanzados y dependencias core de forma desatendida.
+* **Aceleración por Hardware:** Detección automática de GPU (Adreno / Turnip) y configuración de Mesa Zink para máximo rendimiento gráfico.
+* **Entorno Gráfico Moderno:** XFCE4 preconfigurado con paquetes de iconos y temas personalizados (SmallSur / WhiteSur).
+* **Capa Windows (Wine):** Integración con Hangover-Wine y Box64 para ejecutar aplicaciones de Windows.
+* **IDE y Navegador Nativos:** Incluye Google Antigravity IDE y Google Chrome con optimización `--no-sandbox`.
 
 ---
 
 ## 🚀 Instalación Rápida (1 Comando)
 
-Antes de comenzar, asegúrate de tener instalada la versión de **Termux** desde [F-Droid](https://f-droid.org/packages/com.termux/) (no uses la versión de la Play Store, está obsoleta).
+Antes de comenzar, asegúrate de tener instalada la versión de **Termux** desde [F-Droid](https://f-droid.org/packages/com.termux/) (evita la versión de la Google Play Store por estar obsoleta).
 
-1. Abre Termux y concede permisos de almacenamiento (escribe `y` si te lo pregunta):
-   ```bash
-   termux-setup-storage
-   ```
+1. Abre Termux y asegúrate de permitir los permisos de almacenamiento cuando el script o el sistema te lo soliciten.
+2. Copia, pega y ejecuta este comando para iniciar la instalación de Nuntius:
+```bash
+curl -sL https://raw.githubusercontent.com/nuntius-dev/ubuntu-proot-termux/main/debian.sh | bash
 
-2. Copia, pega y ejecuta este comando para iniciar la instalación mágica:
-   ```bash
-   curl -sL https://raw.githubusercontent.com/nuntius-dev/ubuntu-proot-termux/main/install-ubuntu-termux.sh | bash
-   ```
+```
 
-El proceso tomará unos minutos dependiendo de tu conexión a internet. ¡No cierres la aplicación!
+
+
+El proceso tomará unos minutos dependiendo de la velocidad de tu conexión a internet. ¡No cierres la aplicación durante el proceso!
 
 ---
 
 ## 💻 Uso y Acceso
 
-Una vez que el script finalice, iniciar tu sistema es muy sencillo:
+Una vez que el script finalice la instalación, iniciar tu entorno gráfico es muy sencillo:
 
-1. En la consola de Termux, escribe:
-   ```bash
-   startubuntu
-   ```
-2. Abre tu cliente VNC favorito (como [AVNC](https://f-droid.org/en/packages/com.gujjwal.avnc/) o RealVNC) y conéctate a:
-   * **Dirección:** `127.0.0.1:5901` (o puerto local 5901)
-   * **Contraseña VNC:** `ubuntu`
+1. Abre la aplicación **Termux-X11** en tu Android previamente.
+2. En la consola de Termux, escribe y ejecuta:
+```bash
+./start-nuntius.sh
 
-> **Nota:** El usuario del sistema es `ubuntu` y su contraseña para usar el comando `sudo` también es `ubuntu`.
+```
+
+
+3. Dirígete a tu app Termux-X11 para disfrutar del escritorio completo.
 
 ---
 
-## ⚠️ Solución de Problemas (¡Importante!)
+## 🛠️ Herramientas y Accesos Directos Incluidos
 
-### Termux se cierra solo o el sistema se congela (Phantom Process Killer)
-A partir de Android 12, Google introdujo una medida estricta de batería que "mata" aplicaciones que generan muchos subprocesos, como lo hace este entorno de escritorio. 
-
-Para que tu Ubuntu funcione de forma fluida y no crashee, debes **desactivar esta restricción mediante ADB** usando una computadora o depuración inalámbrica.
-
-Ejecuta estos dos comandos desde tu PC conectados a tu Android:
-```bash
-adb shell "device_config put activity_manager max_phantom_processes 2147483647"
-adb shell "device_config set_sync_disabled_for_tests persistent"
-```
-*(Ten en cuenta que en algunos dispositivos, este parche debe volver a aplicarse si reinicias el teléfono por completo).*
+* **Antigravity IDE:** Entorno de desarrollo avanzado.
+* **Google Chrome:** Navegador web optimizado para ARM64.
+* **XFCE4 Terminal & Thunar:** Terminal y administrador de archivos.
+* **Plank Dock:** Barra de tareas flotante con estética macOS.
